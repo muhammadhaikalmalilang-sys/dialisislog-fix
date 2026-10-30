@@ -207,6 +207,59 @@ export function touchNurseDailyStorage(nurseName: string, dateIso?: string): voi
   }
 }
 
+export const GLOBAL_LOGBOOK_DATE_KEY = 'dialysis_global_logbook_date_v2';
+
+/**
+ * Global check: if the calendar day has changed, resets ALL nurses' and roles'
+ * temporary daily logbook state in localStorage so the logbook starts completely clean & empty.
+ */
+export function checkAndResetAllDailyLogbooksIfDayChanged(todayIso: string): boolean {
+  if (typeof window === 'undefined' || !window.localStorage || !todayIso) {
+    return false;
+  }
+  try {
+    const storedGlobalDate = localStorage.getItem(GLOBAL_LOGBOOK_DATE_KEY);
+    const isNewDay = !storedGlobalDate || storedGlobalDate !== todayIso;
+
+    if (isNewDay) {
+      const keysToRemove: string[] = [];
+      const prefixList = [
+        'logbook_managed_patients_v5_',
+        'logbook_clinical_details_v6_',
+        'logbook_facility_statuses_v6_',
+        'logbook_facility_notes_v6_',
+        'logbook_patient_statuses_v5_',
+        'logbook_patient_statuses_v6_',
+        'logbook_patient_notes_v5_',
+        'logbook_patient_notes_v6_',
+        'logbook_pj_verification_v5_',
+        'logbook_pj_verification_v6_',
+        'logbook_patient_submissions_v1_',
+        'logbook_shift_doctors_v1_',
+        'logbook_active_date_v6_'
+      ];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && prefixList.some((p) => k.startsWith(p))) {
+          keysToRemove.push(k);
+        }
+      }
+
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      localStorage.removeItem(FACILITY_STATUSES_STORAGE_KEY);
+      localStorage.removeItem(FACILITY_NOTES_STORAGE_KEY);
+      localStorage.removeItem(PER_PATIENT_STATUS_STORAGE_KEY);
+
+      localStorage.setItem(GLOBAL_LOGBOOK_DATE_KEY, todayIso);
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 /**
  * Resets local daily logbook data for a specific nurse to empty/clean state.
  * Called automatically when calendar day changes.
@@ -243,7 +296,17 @@ export function checkAndResetOutdatedNurseDailyStorage(nurseName: string, todayI
   }
   try {
     const lastActive = localStorage.getItem(getNurseLastActiveDateKey(nurseName));
+    const managedKey = getNurseManagedPatientsKey(nurseName);
+    const hasManaged = localStorage.getItem(managedKey);
+    const hasFacility = localStorage.getItem(getNurseFacilityStatusesKey(nurseName));
+    const hasClin = localStorage.getItem(getNurseClinicalDetailsKey(nurseName));
+
     if (lastActive && lastActive !== todayIso) {
+      clearNurseDailyLogbookStorage(nurseName, todayIso);
+      return true;
+    }
+    // If lastActive was not set but there is existing daily logbook data, it belongs to an earlier session/day
+    if (!lastActive && (hasManaged || hasFacility || hasClin)) {
       clearNurseDailyLogbookStorage(nurseName, todayIso);
       return true;
     }
@@ -261,7 +324,7 @@ export function checkAndResetOutdatedNurseDailyStorage(nurseName: string, todayI
         // ignore
       }
     }
-    if (!lastActive) {
+    if (!lastActive || lastActive !== todayIso) {
       localStorage.setItem(getNurseLastActiveDateKey(nurseName), todayIso);
     }
   } catch {
@@ -280,6 +343,11 @@ export function readNurseFacilityStatuses(nurseName: string): Record<string, boo
     return emptyDefaults;
   }
   try {
+    const todayIso = getCurrentIsoDateWib();
+    const lastActive = localStorage.getItem(getNurseLastActiveDateKey(nurseName));
+    if (lastActive && lastActive !== todayIso) {
+      return emptyDefaults;
+    }
     const perNurseRaw = localStorage.getItem(getNurseFacilityStatusesKey(nurseName));
     if (perNurseRaw) {
       const parsed = JSON.parse(perNurseRaw);
@@ -288,7 +356,6 @@ export function readNurseFacilityStatuses(nurseName: string): Record<string, boo
       }
     }
     // Backward compatibility fallback ONLY if this nurse already has an active registry submission for TODAY
-    const todayIso = getCurrentIsoDateWib();
     const hasRegistryEntryToday = getVerificationRegistry().some(
       (e) =>
         isMatchingNurse(e.submittedNurseName, nurseName) &&
@@ -319,6 +386,11 @@ export function readNurseFacilityNotes(nurseName: string): Record<string, string
     return emptyNotes;
   }
   try {
+    const todayIso = getCurrentIsoDateWib();
+    const lastActive = localStorage.getItem(getNurseLastActiveDateKey(nurseName));
+    if (lastActive && lastActive !== todayIso) {
+      return emptyNotes;
+    }
     const perNurseRaw = localStorage.getItem(getNurseFacilityNotesKey(nurseName));
     if (perNurseRaw) {
       const parsed = JSON.parse(perNurseRaw);

@@ -129,6 +129,7 @@ import {
   touchNurseDailyStorage,
   clearNurseDailyLogbookStorage,
   checkAndResetOutdatedNurseDailyStorage,
+  checkAndResetAllDailyLogbooksIfDayChanged,
   readNurseFacilityStatuses,
   readNurseFacilityNotes,
   resolveLogbookLockState,
@@ -634,8 +635,14 @@ export const Logbook5ButtonsView: React.FC<Logbook5ButtonsViewProps> = ({
   // Managed Patients State — strictly isolated per nurse and current day
   const [managedPatients, setManagedPatients] = useState<ManagedPatient[]>(() => {
     const todayIso = getCurrentIsoDateWib();
-    const wasReset = checkAndResetOutdatedNurseDailyStorage(currentNurse.name, todayIso);
-    if (wasReset) {
+    const wasGlobalReset = checkAndResetAllDailyLogbooksIfDayChanged(todayIso);
+    const wasNurseReset = checkAndResetOutdatedNurseDailyStorage(currentNurse.name, todayIso);
+    if (wasGlobalReset || wasNurseReset) {
+      return [];
+    }
+
+    const lastActive = localStorage.getItem(getNurseLastActiveDateKey(currentNurse.name));
+    if (lastActive && lastActive !== todayIso) {
       return [];
     }
 
@@ -710,6 +717,11 @@ export const Logbook5ButtonsView: React.FC<Logbook5ButtonsViewProps> = ({
   const [patientClinicalDetails, setPatientClinicalDetails] = useState<
     Record<string, PatientLogbookClinicalDetails>
   >(() => {
+    const todayIso = getCurrentIsoDateWib();
+    const lastActive = localStorage.getItem(getNurseLastActiveDateKey(currentNurse.name));
+    if (lastActive && lastActive !== todayIso) {
+      return {};
+    }
     const base = buildInitialClinicalDetailsMap(managedPatients);
     try {
       const saved = localStorage.getItem(clinicalDetailsStorageKey);
@@ -743,7 +755,12 @@ export const Logbook5ButtonsView: React.FC<Logbook5ButtonsViewProps> = ({
   // Patient-specific (Bagian 2, 3, 4, 5, 6) Checklists & Notes — isolated per nurse
   const [patientStatuses, setPatientStatuses] = useState<Record<string, Record<string, boolean>>>(
     () => {
+      const todayIso = getCurrentIsoDateWib();
+      const lastActive = localStorage.getItem(getNurseLastActiveDateKey(currentNurse.name));
       const defaults = buildDefaultStatusesForPatients(managedPatients);
+      if (lastActive && lastActive !== todayIso) {
+        return defaults;
+      }
       try {
         const saved = localStorage.getItem(patientStatusesStorageKey);
         if (saved) {
@@ -769,7 +786,12 @@ export const Logbook5ButtonsView: React.FC<Logbook5ButtonsViewProps> = ({
   );
 
   const [patientNotes, setPatientNotes] = useState<Record<string, Record<string, string>>>(() => {
+    const todayIso = getCurrentIsoDateWib();
+    const lastActive = localStorage.getItem(getNurseLastActiveDateKey(currentNurse.name));
     const defaults = buildDefaultNotesForPatients(managedPatients);
+    if (lastActive && lastActive !== todayIso) {
+      return defaults;
+    }
     try {
       const saved = localStorage.getItem(patientNotesStorageKey);
       if (saved) {
@@ -1152,9 +1174,57 @@ export const Logbook5ButtonsView: React.FC<Logbook5ButtonsViewProps> = ({
       const todayIso = getCurrentIsoDateWib();
       const cloudDateIso =
         cloudData.dateIso ||
-        (cloudData.shiftSchedule?.date ? indonesianDateLabelToIso(cloudData.shiftSchedule.date) : '');
+        (cloudData.shiftSchedule?.date ? indonesianDateLabelToIso(cloudData.shiftSchedule.date) : '') ||
+        (cloudData.logbookDate ? indonesianDateLabelToIso(cloudData.logbookDate) : '') ||
+        (cloudData.updatedAt ? cloudData.updatedAt.slice(0, 10) : '');
+
       if (cloudDateIso && cloudDateIso !== todayIso) {
-        // Cloud data is from an earlier day; preserve today's pristine empty state
+        // Cloud data is from an earlier day; automatically reset cloud data for this nurse to empty state for today
+        saveNurseLogbookCloud(currentNurse.name, {
+          nurseName: currentNurse.name,
+          managedPatients: [],
+          clinicalDetails: {},
+          facilityStatuses: { '1.1': false, '1.2': false, '1.3': false },
+          facilityNotes: {},
+          patientStatuses: {},
+          patientNotes: {},
+          submission: null,
+          patientSubmissions: {},
+          shiftSchedule: { shift: activeShift, date: activeDate },
+          shiftDoctors: {
+            dokterDpjp: selectedDokterDpjp,
+            dokterJaga: selectedDokterJaga
+          },
+          dateIso: todayIso,
+          logbookDate: activeDate
+        });
+        clearNurseDailyLogbookStorage(currentNurse.name, todayIso);
+        setManagedPatients([]);
+        setOpenedPatientId(null);
+        setFacilityStatuses({ '1.1': false, '1.2': false, '1.3': false });
+        setFacilityNotes({ '1.1': '', '1.2': '', '1.3': '' });
+        setPatientClinicalDetails({});
+        setPatientStatuses({});
+        setPatientNotes({});
+        setPatientSubmissions({});
+        setPjVerification({
+          status: 'belum_diajukan',
+          submittedNurseName: currentNurse.name,
+          submittedNurseNip: currentNurse.nip,
+          submittedNurseRole: activeRole,
+          targetRole: defaultTargetRole,
+          targetVerifierName: defaultTargetVerifier.name,
+          targetVerifierNip: defaultTargetVerifier.nip,
+          pjShiftName: defaultPjShiftNurse.name,
+          pjShiftNip: defaultPjShiftNurse.nip,
+          declarationChecked: false,
+          notes: ''
+        });
+        return;
+      }
+
+      if (!cloudDateIso) {
+        // Untagged/unknown date cloud data; do not populate into today's logbook
         return;
       }
 
@@ -1299,7 +1369,59 @@ export const Logbook5ButtonsView: React.FC<Logbook5ButtonsViewProps> = ({
     patientNotesStorageKey,
     submissionStorageKey,
     patientSubmissionsStorageKey,
-    shiftDoctorsStorageKey
+    shiftDoctorsStorageKey,
+    activeShift,
+    activeDate,
+    selectedDokterDpjp,
+    selectedDokterJaga,
+    activeRole,
+    defaultTargetRole,
+    defaultTargetVerifier.name,
+    defaultTargetVerifier.nip,
+    defaultPjShiftNurse.name,
+    defaultPjShiftNurse.nip
+  ]);
+
+  // Listen to real-time day transition event across components
+  useEffect(() => {
+    const handleDayChanged = () => {
+      setManagedPatients([]);
+      setOpenedPatientId(null);
+      setDraftMasterId('');
+      setDraftPatientName('');
+      setDraftPatientRm('');
+      setDraftBedNumber('');
+      setFacilityStatuses({ '1.1': false, '1.2': false, '1.3': false });
+      setFacilityNotes({ '1.1': '', '1.2': '', '1.3': '' });
+      setPatientClinicalDetails({});
+      setPatientStatuses({});
+      setPatientNotes({});
+      setPatientSubmissions({});
+      setPjVerification({
+        status: 'belum_diajukan',
+        submittedNurseName: currentNurse.name,
+        submittedNurseNip: currentNurse.nip,
+        submittedNurseRole: activeRole,
+        targetRole: defaultTargetRole,
+        targetVerifierName: defaultTargetVerifier.name,
+        targetVerifierNip: defaultTargetVerifier.nip,
+        pjShiftName: defaultPjShiftNurse.name,
+        pjShiftNip: defaultPjShiftNurse.nip,
+        declarationChecked: false,
+        notes: ''
+      });
+    };
+    window.addEventListener('dialysis_day_changed', handleDayChanged);
+    return () => window.removeEventListener('dialysis_day_changed', handleDayChanged);
+  }, [
+    currentNurse.name,
+    currentNurse.nip,
+    activeRole,
+    defaultTargetRole,
+    defaultTargetVerifier.name,
+    defaultTargetVerifier.nip,
+    defaultPjShiftNurse.name,
+    defaultPjShiftNurse.nip
   ]);
 
   // 2. Debounced save to Cloud Firestore whenever nurse makes changes locally (only on current day)

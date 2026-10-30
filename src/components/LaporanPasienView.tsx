@@ -33,8 +33,10 @@ import {
   Activity,
   Layers,
   Book,
-  UserPlus
+  UserPlus,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportMasterHemodialisaWorkbook } from '../utils/exportMasterSpreadsheet.ts';
 
 interface LaporanPasienViewProps {
   shiftInfo: ShiftInfo;
@@ -139,6 +141,19 @@ export const LaporanPasienView: React.FC<LaporanPasienViewProps> = ({
     printDocumentWithOrientation(true, docTitle);
   };
 
+  const handleExportMasterSpreadsheet = () => {
+    exportMasterHemodialisaWorkbook({
+      shiftInfo: {
+        ...shiftInfo,
+        shift: selectedShift
+      },
+      sessions,
+      laporanPasienRows: rawRows.length > 0 ? rawRows : undefined,
+      masterNurses,
+      masterPatients
+    });
+  };
+
   return (
     <div className="space-y-4 pb-12">
 
@@ -181,10 +196,19 @@ export const LaporanPasienView: React.FC<LaporanPasienViewProps> = ({
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e4b85] hover:bg-[#163865] text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1e4b85] hover:bg-[#163865] text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak / PDF Tabel Pasien</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleExportMasterSpreadsheet}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+              title="Coba unduh 1 File Master Excel (.xlsx) yang menggabungkan Laporan Pasien, Laporan PJ Shift, dan Rekapitulasi Bulanan Semua Perawat"
+            >
+              <FileSpreadsheet className="w-4 h-4 shrink-0" />
+              <span>Master Excel (Semua Laporan)</span>
             </button>
           </div>
         </div>

@@ -91,7 +91,8 @@ import {
   isKepalaRuangVerifier,
   getNurseClinicalDetailsKey,
   getNursePatientStatusesKey,
-  resetVerificationStorageToBenchmark
+  resetVerificationStorageToBenchmark,
+  checkAndResetAllDailyLogbooksIfDayChanged
 } from './utils/nurseVerificationHelpers.ts';
 import {
   DEFAULT_KEPALA_RUANGAN_NAME,
@@ -464,6 +465,13 @@ export default function App() {
 
   const handleResetDateToToday = () => {
     setIsCustomDate(false);
+    const todayIso = getCurrentIsoDateWib();
+    const wasReset = checkAndResetAllDailyLogbooksIfDayChanged(todayIso);
+    if (wasReset && typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('dialysis_day_changed', { detail: { todayIso } })
+      );
+    }
     setShiftInfo((prev) => ({
       ...prev,
       date: getCurrentIndonesianFullDate()
@@ -480,20 +488,35 @@ export default function App() {
 
   // Shift & Sessions state (v6 starts completely clean with zero built-in patient sessions)
   const [isCustomDate, setIsCustomDate] = useState<boolean>(false);
-  const [shiftInfo, setShiftInfo] = useState<ShiftInfo>(() => ({
-    ...initialShiftInfo,
-    date: getCurrentIndonesianFullDate()
-  }));
+  const [shiftInfo, setShiftInfo] = useState<ShiftInfo>(() => {
+    if (typeof window !== 'undefined') {
+      checkAndResetAllDailyLogbooksIfDayChanged(getCurrentIsoDateWib());
+    }
+    return {
+      ...initialShiftInfo,
+      date: getCurrentIndonesianFullDate()
+    };
+  });
 
   // Keep active day/date automatically synchronized with real-time WIB clock unless custom date selected
   useEffect(() => {
+    const todayIso = getCurrentIsoDateWib();
+    checkAndResetAllDailyLogbooksIfDayChanged(todayIso);
+
     if (isCustomDate) return;
     const syncLiveDate = () => {
       const liveDateLabel = getCurrentIndonesianFullDate();
+      const currentTodayIso = getCurrentIsoDateWib();
+      const wasReset = checkAndResetAllDailyLogbooksIfDayChanged(currentTodayIso);
+      if (wasReset && typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('dialysis_day_changed', { detail: { todayIso: currentTodayIso } })
+        );
+      }
       setShiftInfo((prev) => (prev.date === liveDateLabel ? prev : { ...prev, date: liveDateLabel }));
     };
     syncLiveDate();
-    const timerId = window.setInterval(syncLiveDate, 15000);
+    const timerId = window.setInterval(syncLiveDate, 10000);
     return () => window.clearInterval(timerId);
   }, [isCustomDate]);
 

@@ -36,8 +36,10 @@ import {
   Activity,
   Filter,
   RefreshCw,
-  FileText
+  FileText,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportMasterHemodialisaWorkbook } from '../utils/exportMasterSpreadsheet.ts';
 import type { NurseLogbookCloudData } from '../services/firebase.ts';
 
 interface LapBulananViewProps {
@@ -270,6 +272,32 @@ export const LapBulananView: React.FC<LapBulananViewProps> = ({
     printDocumentWithOrientation(true, docTitle);
   };
 
+  const handleExportMasterSpreadsheet = () => {
+    exportMasterHemodialisaWorkbook({
+      shiftInfo: shiftInfo || {
+        hospitalName: 'RS Happy Land Medical Centre',
+        unitName: 'Instalasi Dialisis',
+        date: getCurrentIndonesianFullDate(),
+        shift: 'Pagi',
+        shiftHours: '07.00 - 14.00 WIB',
+        pjShift: 'M. Haikal Malilang, A.Md. Kep.',
+        dokterDpjp: 'dr. Raden Heru Prasanto, Sp.PD-KGH',
+        kepalaRuangan: 'Twis Fertilianti PW., S.Kep., Ns.',
+        dokterJaga: 'dr. Paramitha',
+        totalPerawatDinas: 8,
+        detailPerawat: '8 Orang (1 PJ Shift + 7 Perawat Pelaksana)',
+        perawatRatio: '1 : 3',
+        tenagaPendukung: '1 Teknisi Elektromedis/RO, 1 HK Ruangan',
+        pjShiftBerikutnya: 'Aprillia Dwi N, S.Kep., Ns.'
+      },
+      sessions: sessions || [],
+      masterNurses: masterNurses || [],
+      cloudNurseLogbooks: cloudNurseLogbooks || [],
+      targetMonth: selectedMonth,
+      targetYear: selectedYear
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Header Banner & Interactive Filter Bar */}
@@ -300,7 +328,7 @@ export const LapBulananView: React.FC<LapBulananViewProps> = ({
             </p>
           </div>
 
-          {/* View Switcher: Matrix vs Cetak 1:1 + Tombol Simpan PDF */}
+          {/* View Switcher: Matrix vs Cetak 1:1 + Tombol Simpan PDF + Download Master Excel */}
           <div className="flex flex-wrap items-center gap-2 self-start md:self-center shrink-0">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
               <button
@@ -344,6 +372,17 @@ export const LapBulananView: React.FC<LapBulananViewProps> = ({
             >
               <Printer className="w-4 h-4 shrink-0" />
               <span>Simpan PDF</span>
+            </button>
+
+            {/* Tombol Master Spreadsheet (1 File Excel Semua Laporan) */}
+            <button
+              type="button"
+              onClick={handleExportMasterSpreadsheet}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+              title="Coba unduh 1 File Master Excel (.xlsx) yang menggabungkan Laporan Pasien, Laporan PJ Shift, dan Rekapitulasi Bulanan Semua Perawat"
+            >
+              <FileSpreadsheet className="w-4 h-4 shrink-0" />
+              <span>Master Excel (Semua Laporan)</span>
             </button>
           </div>
         </div>

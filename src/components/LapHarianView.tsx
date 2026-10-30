@@ -62,8 +62,10 @@ import {
   Layers,
   ClipboardCheck,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  FileSpreadsheet
 } from 'lucide-react';
+import { exportMasterHemodialisaWorkbook } from '../utils/exportMasterSpreadsheet.ts';
 
 interface LapHarianViewProps {
   shiftInfo: ShiftInfo;
@@ -697,6 +699,19 @@ export const LapHarianView: React.FC<LapHarianViewProps> = ({
     }, 250);
   };
 
+  const handleExportMasterSpreadsheet = () => {
+    exportMasterHemodialisaWorkbook({
+      shiftInfo: effectiveShiftInfo,
+      sessions,
+      operationalItems,
+      sbar,
+      masterNurses,
+      masterPatients,
+      masterDoctors
+    });
+    showToast('File Master Spreadsheet (.xlsx) 5-Sheet berhasil diunduh.');
+  };
+
   const activeDateFormatted = shiftSummary.activeDateFormatted;
 
   return (
@@ -755,11 +770,21 @@ export const LapHarianView: React.FC<LapHarianViewProps> = ({
             <button
               type="button"
               onClick={handlePrintOrSavePdf}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1e4b85] hover:bg-[#163865] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1e4b85] hover:bg-[#163865] text-white text-xs font-bold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0"
               title="Cetak langsung atau simpan sebagai dokumen PDF resmi (Seksi A–F)"
             >
               <Printer className="w-4 h-4" />
               <span>Cetak / Simpan PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportMasterSpreadsheet}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+              title="Coba unduh 1 File Master Excel (.xlsx) yang menggabungkan Laporan Pasien, Laporan PJ Shift, dan Rekapitulasi Bulanan Semua Perawat"
+            >
+              <FileSpreadsheet className="w-4 h-4 shrink-0" />
+              <span>Master Excel (Semua Laporan)</span>
             </button>
           </div>
         </div>
