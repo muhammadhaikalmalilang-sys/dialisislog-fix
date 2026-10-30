@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "DialisisLog - Sistem Logbook Hemodialisa",
+  "short_name": "DialisisLog",
+  "description": "Sistem informasi terintegrasi asuhan hemodialisa perawat pelaksana dan pelaporan otomatis PJ shift RS Happy Land Medical Centre.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d395f",
+  "theme_color": "#1f6a96",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

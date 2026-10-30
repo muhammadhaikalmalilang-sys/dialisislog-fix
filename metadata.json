@@ -1,0 +1,8 @@
+{
+  "name": "DialisisLog 4.5",
+  "description": "Sistem informasi terintegrasi asuhan hemodialisa perawat pelaksana dan pelaporan otomatis PJ shift terstandar KARS \u0026 PERNEFRI.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

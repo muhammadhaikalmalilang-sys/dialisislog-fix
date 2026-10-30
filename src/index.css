@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  body {
+    @apply antialiased text-slate-800 bg-slate-50/70;
+  }
+
+  @page {
+    size: auto;
+    margin: 8mm;
+  }
+
+  @media print {
+    /* Global Reset: remove backgrounds, scrollbars, clipping overflows and min-heights */
+    html,
+    body,
+    #root,
+    #root > div,
+    main,
+    main > div {
+      overflow: visible !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      position: static !important;
+      background: white !important;
+      background-image: none !important;
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      backdrop-filter: none !important;
+      color: black !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    /* Hide non-printable app components */
+    header,
+    nav,
+    aside,
+    footer,
+    button,
+    .print\:hidden,
+    [role="alert"],
+    [role="status"] {
+      display: none !important;
+    }
+
+    /* Printable containers full bleed styling */
+    #printable-report,
+    #printable-official-logbook,
+    #printable-patient-report,
+    #printable-unit-recap,
+    .printable-sheet {
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 auto !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      background: white !important;
+      color: black !important;
+      position: static !important;
+      overflow: visible !important;
+    }
+
+    /* Prevent clipping on overflow wrappers */
+    .overflow-x-auto,
+    .overflow-y-auto,
+    .scrollbar-thin {
+      overflow: visible !important;
+      max-height: none !important;
+    }
+
+    /* Table print pagination rules */
+    table {
+      page-break-inside: auto;
+      border-collapse: collapse !important;
+      width: 100% !important;
+    }
+
+    tr {
+      page-break-inside: avoid !important;
+      page-break-after: auto;
+    }
+
+    thead {
+      display: table-header-group !important;
+    }
+
+    tfoot {
+      display: table-footer-group !important;
+    }
+
+    .print-avoid-break {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    .print-page-break-before {
+      page-break-before: always !important;
+      break-before: page !important;
+    }
+
+    /* Modal Print Isolation: when printing from a modal dialog, isolate modal sheet */
+    body.dialysis-modal-printing .app-shell-root,
+    body.dialysis-modal-printing aside,
+    body.dialysis-modal-printing header,
+    body.dialysis-modal-printing footer,
+    body.dialysis-modal-printing main {
+      display: none !important;
+    }
+
+    body.dialysis-modal-printing #printable-pelaksana-modal,
+    body.dialysis-modal-printing .modal-printable-target {
+      display: block !important;
+      position: static !important;
+      inset: auto !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: white !important;
+      box-shadow: none !important;
+    }
+  }
+}

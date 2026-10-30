@@ -1,0 +1,137 @@
+{
+  "entities": {
+    "DialysisSession": {
+      "title": "DialysisSession",
+      "description": "Data sesi dan logbook tindakan asuhan hemodialisa pasien",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "bedNumber": { "type": "string", "maxLength": 64 },
+        "patientName": { "type": "string", "maxLength": 300 },
+        "medicalRecordNumber": { "type": "string", "maxLength": 64 },
+        "nurseInCharge": { "type": "string", "maxLength": 300 },
+        "vascularAccessNurse": { "type": "string", "maxLength": 300 },
+        "poin3_6Completed": { "type": "boolean" },
+        "shift": { "type": "string", "maxLength": 32 },
+        "sessionStatus": { "type": "string", "maxLength": 32 },
+        "verificationStatus": { "type": "string", "maxLength": 32 },
+        "nurseNotes": { "type": "string", "maxLength": 5000 },
+        "verifierNotes": { "type": "string", "maxLength": 2000 },
+        "targetUf": { "type": "number" },
+        "achievedUf": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "bedNumber", "patientName"]
+    },
+    "ShiftReport": {
+      "title": "ShiftReport",
+      "description": "Laporan harian shift, sensus pasien, dan SBAR unit hemodialisa",
+      "type": "object",
+      "properties": {
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "MasterPatient": {
+      "title": "MasterPatient",
+      "description": "Data master pasien hemodialisa terjadwal",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "patientName": { "type": "string", "maxLength": 300 },
+        "medicalRecordNumber": { "type": "string", "maxLength": 64 },
+        "routineSchedule": { "type": "string", "maxLength": 200 },
+        "notes": { "type": "string", "maxLength": 2000 }
+      },
+      "required": ["id", "patientName"]
+    },
+    "MasterNurse": {
+      "title": "MasterNurse",
+      "description": "Data master tenaga perawat unit hemodialisa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 300 },
+        "role": { "type": "string", "maxLength": 64 },
+        "nip": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "name"]
+    },
+    "MasterBed": {
+      "title": "MasterBed",
+      "description": "Data master tempat tidur dan mesin hemodialisa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "bedNumber": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "bedNumber"]
+    },
+    "MasterDoctor": {
+      "title": "MasterDoctor",
+      "description": "Data master dokter penanggung jawab pelayanan (DPJP) dan dokter jaga ruangan unit hemodialisa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 300 },
+        "role": { "type": "string", "maxLength": 64 },
+        "sip": { "type": "string", "maxLength": 128 },
+        "nip": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "name", "role"]
+    },
+    "NurseLogbook": {
+      "title": "NurseLogbook",
+      "description": "State logbook mandiri perawat pelaksana harian",
+      "type": "object",
+      "properties": {
+        "nurseName": { "type": "string", "maxLength": 300 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["nurseName"]
+    },
+    "VerificationRegistry": {
+      "title": "VerificationRegistry",
+      "description": "Registri antrean verifikasi logbook perawat oleh PJ Shift dan Kepala Ruangan",
+      "type": "object",
+      "properties": {
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      }
+    }
+  },
+  "firestore": {
+    "/dialysis_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/DialysisSession" },
+      "description": "Sesi hemodialisa dan logbook asuhan perawat pelaksana"
+    },
+    "/shift_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/ShiftReport" },
+      "description": "Laporan shift harian dan operasional"
+    },
+    "/master_patients/{patientId}": {
+      "schema": { "$ref": "#/entities/MasterPatient" },
+      "description": "Daftar master pasien rutin hemodialisa"
+    },
+    "/master_nurses/{nurseId}": {
+      "schema": { "$ref": "#/entities/MasterNurse" },
+      "description": "Daftar master perawat dan peran dinas"
+    },
+    "/master_beds/{bedId}": {
+      "schema": { "$ref": "#/entities/MasterBed" },
+      "description": "Daftar master tempat tidur dan mesin hemodialisa"
+    },
+    "/master_doctors/{doctorId}": {
+      "schema": { "$ref": "#/entities/MasterDoctor" },
+      "description": "Daftar master dokter DPJP dan dokter jaga ruangan hemodialisa"
+    },
+    "/nurse_logbooks/{nurseKey}": {
+      "schema": { "$ref": "#/entities/NurseLogbook" },
+      "description": "State logbook mandiri perawat pelaksana (pasien asuhan, checklist, TTV, pengajuan PJ)"
+    },
+    "/verification_registry/{regId}": {
+      "schema": { "$ref": "#/entities/VerificationRegistry" },
+      "description": "Pusat antrean verifikasi logbook perawat oleh PJ Shift dan Kepala Ruangan"
+    }
+  }
+}
